@@ -302,14 +302,21 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?
     ): List<StepsData> {
-        val request = ReadRecordsRequest(
-            recordType = StepsRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-        )
+        val allRecords = mutableListOf<StepsRecord>()
+        var pageToken: String? = null
+        
+        do {
+            val request = ReadRecordsRequest(
+                recordType = StepsRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+                pageToken = pageToken
+            )
+            val response = healthConnectClient.readRecords(request)
+            allRecords.addAll(response.records)
+            pageToken = response.pageToken
+        } while (pageToken != null)
 
-        val response = healthConnectClient.readRecords(request)
-
-        return response.records
+        return allRecords
             .filter { record ->
                 lastSync == null || record.endTime >= lastSync
             }
@@ -357,9 +364,21 @@ class HealthConnectManager(private val context: Context) {
     }
 
     private suspend fun readHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeartRateData> {
-        val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records
+        val allRecords = mutableListOf<HeartRateRecord>()
+        var pageToken: String? = null
+        
+        do {
+            val request = ReadRecordsRequest(
+                recordType = HeartRateRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+                pageToken = pageToken
+            )
+            val response = healthConnectClient.readRecords(request)
+            allRecords.addAll(response.records)
+            pageToken = response.pageToken
+        } while (pageToken != null)
+        
+        return allRecords
             .flatMap { record ->
                 record.samples
                     .filter { lastSync == null || it.time >= lastSync }
