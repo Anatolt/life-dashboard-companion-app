@@ -44,6 +44,7 @@ fun ScreenTimeScreen() {
     var initialUseDayBoundary by remember { mutableStateOf(preferencesManager.useScreenTimeDayBoundary()) }
     var initialWebhookHeaders by remember { mutableStateOf(preferencesManager.getScreenTimeWebhookHeaders()) }
     var initialWebhookSecret by remember { mutableStateOf(preferencesManager.getScreenTimeWebhookSecret() ?: "") }
+    var initialConnectionOverride by remember { mutableStateOf(preferencesManager.isScreenTimeConnectionOverrideEnabled()) }
 
     var syncInterval by remember { mutableStateOf(initialSyncInterval.toString()) }
     var webhookUrls by remember { mutableStateOf(initialWebhookUrls) }
@@ -51,6 +52,7 @@ fun ScreenTimeScreen() {
     var useDayBoundary by remember { mutableStateOf(initialUseDayBoundary) }
     var webhookHeaders by remember { mutableStateOf(initialWebhookHeaders) }
     var webhookSecret by remember { mutableStateOf(initialWebhookSecret) }
+    var useConnectionOverride by remember { mutableStateOf(initialConnectionOverride) }
     var newHeaderKey by remember { mutableStateOf("") }
     var newHeaderValue by remember { mutableStateOf("") }
     var isHeadersExpanded by remember { mutableStateOf(false) }
@@ -69,10 +71,10 @@ fun ScreenTimeScreen() {
         hasPermission = screenTimeManager.hasPermission()
     }
 
-    val hasChanges = remember(syncInterval, webhookUrls, dayBoundaryHour, useDayBoundary, webhookHeaders, webhookSecret, initialSyncInterval, initialWebhookUrls, initialDayBoundaryHour, initialUseDayBoundary, initialWebhookHeaders, initialWebhookSecret) {
+    val hasChanges = remember(syncInterval, webhookUrls, dayBoundaryHour, useDayBoundary, webhookHeaders, webhookSecret, useConnectionOverride, initialSyncInterval, initialWebhookUrls, initialDayBoundaryHour, initialUseDayBoundary, initialWebhookHeaders, initialWebhookSecret, initialConnectionOverride) {
         val currentInterval = syncInterval.toIntOrNull() ?: initialSyncInterval
         val currentBoundaryHour = dayBoundaryHour.toIntOrNull() ?: initialDayBoundaryHour
-        currentInterval != initialSyncInterval || webhookUrls != initialWebhookUrls || currentBoundaryHour != initialDayBoundaryHour || useDayBoundary != initialUseDayBoundary || webhookHeaders != initialWebhookHeaders || webhookSecret != initialWebhookSecret
+        currentInterval != initialSyncInterval || webhookUrls != initialWebhookUrls || currentBoundaryHour != initialDayBoundaryHour || useDayBoundary != initialUseDayBoundary || webhookHeaders != initialWebhookHeaders || webhookSecret != initialWebhookSecret || useConnectionOverride != initialConnectionOverride
     }
 
     val scrollState = rememberScrollState()
@@ -275,6 +277,28 @@ fun ScreenTimeScreen() {
                         cursorColor = ScreenTimePrimary
                     )
                 )
+            }
+
+            // Connection profile
+            SectionCard(
+                title = "Connection profile",
+                subtitle = if (useConnectionOverride) "Separate Screen Time settings" else "Using shared settings"
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Override shared connection", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = useConnectionOverride,
+                        onCheckedChange = { enabled ->
+                            useConnectionOverride = enabled
+                            if (!enabled) {
+                                val common = preferencesManager.getCommonDelivery()
+                                webhookUrls = common.webhookUrls
+                                webhookHeaders = common.headers
+                                webhookSecret = common.signingSecret.orEmpty()
+                            }
+                        }
+                    )
+                }
             }
 
             // Webhook URLs
@@ -687,6 +711,7 @@ fun ScreenTimeScreen() {
                             preferencesManager.setUseScreenTimeDayBoundary(useDayBoundary)
                             preferencesManager.setScreenTimeWebhookHeaders(webhookHeaders)
                             preferencesManager.setScreenTimeWebhookSecret(webhookSecret.trim())
+                            preferencesManager.setScreenTimeConnectionOverrideEnabled(useConnectionOverride)
                             (context.applicationContext as? LifeDashboardApplication)?.scheduleScreenTimeSyncWork()
 
                             initialSyncInterval = interval
@@ -695,6 +720,7 @@ fun ScreenTimeScreen() {
                             initialUseDayBoundary = useDayBoundary
                             initialWebhookHeaders = webhookHeaders
                             initialWebhookSecret = webhookSecret
+                            initialConnectionOverride = useConnectionOverride
                             Toast.makeText(context, "Saved!", Toast.LENGTH_SHORT).show()
                         }
                     },

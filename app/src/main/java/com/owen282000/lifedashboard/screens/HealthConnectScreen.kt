@@ -53,12 +53,14 @@ fun HealthConnectScreen(
     var initialEnabledDataTypes by remember { mutableStateOf(preferencesManager.getHealthEnabledDataTypes()) }
     var initialWebhookHeaders by remember { mutableStateOf(preferencesManager.getHealthWebhookHeaders()) }
     var initialWebhookSecret by remember { mutableStateOf(preferencesManager.getHealthWebhookSecret() ?: "") }
+    var initialConnectionOverride by remember { mutableStateOf(preferencesManager.isHealthConnectionOverrideEnabled()) }
     var initialMqttSettings by remember { mutableStateOf(preferencesManager.getMqttSettings()) }
 
     var syncInterval by remember { mutableStateOf(initialSyncInterval.toString()) }
     var webhookUrls by remember { mutableStateOf(initialWebhookUrls) }
     var webhookHeaders by remember { mutableStateOf(initialWebhookHeaders) }
     var webhookSecret by remember { mutableStateOf(initialWebhookSecret) }
+    var useConnectionOverride by remember { mutableStateOf(initialConnectionOverride) }
     var mqttSettings by remember { mutableStateOf(initialMqttSettings) }
     var mqttPortText by remember { mutableStateOf(initialMqttSettings.port.toString()) }
     var isMqttExpanded by remember { mutableStateOf(false) }
@@ -90,9 +92,9 @@ fun HealthConnectScreen(
     var exportJsonData by remember { mutableStateOf<String?>(null) }
     var previewData by remember { mutableStateOf<String?>(null) }
 
-    val hasChanges = remember(syncInterval, webhookUrls, enabledDataTypes, webhookHeaders, webhookSecret, mqttSettings, mqttPortText, initialSyncInterval, initialWebhookUrls, initialEnabledDataTypes, initialWebhookHeaders, initialWebhookSecret, initialMqttSettings) {
+    val hasChanges = remember(syncInterval, webhookUrls, enabledDataTypes, webhookHeaders, webhookSecret, useConnectionOverride, mqttSettings, mqttPortText, initialSyncInterval, initialWebhookUrls, initialEnabledDataTypes, initialWebhookHeaders, initialWebhookSecret, initialConnectionOverride, initialMqttSettings) {
         val currentInterval = syncInterval.toIntOrNull() ?: initialSyncInterval
-        currentInterval != initialSyncInterval || webhookUrls != initialWebhookUrls || enabledDataTypes != initialEnabledDataTypes || webhookHeaders != initialWebhookHeaders || webhookSecret != initialWebhookSecret || mqttSettings.copy(port = mqttPortText.toIntOrNull() ?: mqttSettings.port) != initialMqttSettings
+        currentInterval != initialSyncInterval || webhookUrls != initialWebhookUrls || enabledDataTypes != initialEnabledDataTypes || webhookHeaders != initialWebhookHeaders || webhookSecret != initialWebhookSecret || useConnectionOverride != initialConnectionOverride || mqttSettings.copy(port = mqttPortText.toIntOrNull() ?: mqttSettings.port) != initialMqttSettings
     }
 
     val scrollState = rememberScrollState()
@@ -380,6 +382,28 @@ fun HealthConnectScreen(
                         cursorColor = HealthPrimary
                     )
                 )
+            }
+
+            // Connection profile
+            SectionCard(
+                title = "Connection profile",
+                subtitle = if (useConnectionOverride) "Separate Health settings" else "Using shared settings"
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Override shared connection", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = useConnectionOverride,
+                        onCheckedChange = { enabled ->
+                            useConnectionOverride = enabled
+                            if (!enabled) {
+                                val common = preferencesManager.getCommonDelivery()
+                                webhookUrls = common.webhookUrls
+                                webhookHeaders = common.headers
+                                webhookSecret = common.signingSecret.orEmpty()
+                            }
+                        }
+                    )
+                }
             }
 
             // Webhook URLs
@@ -866,6 +890,7 @@ fun HealthConnectScreen(
                                 preferencesManager.setHealthEnabledDataTypes(enabledDataTypes)
                                 preferencesManager.setHealthWebhookHeaders(webhookHeaders)
                                 preferencesManager.setHealthWebhookSecret(webhookSecret.trim())
+                                preferencesManager.setHealthConnectionOverrideEnabled(useConnectionOverride)
                                 mqttSettings = mqttSettings.copy(port = mqttPortText.toIntOrNull() ?: 1883)
                                 preferencesManager.setMqttSettings(mqttSettings)
 
@@ -889,6 +914,7 @@ fun HealthConnectScreen(
                                 initialEnabledDataTypes = enabledDataTypes
                                 initialWebhookHeaders = webhookHeaders
                                 initialWebhookSecret = webhookSecret
+                                initialConnectionOverride = useConnectionOverride
                                 initialMqttSettings = mqttSettings
                             } catch (e: Exception) {
                                 syncMessage = "Failed: ${e.message}"
@@ -1125,6 +1151,7 @@ fun HealthConnectScreen(
                             preferencesManager.setHealthEnabledDataTypes(enabledDataTypes)
                             preferencesManager.setHealthWebhookHeaders(webhookHeaders)
                             preferencesManager.setHealthWebhookSecret(webhookSecret.trim())
+                            preferencesManager.setHealthConnectionOverrideEnabled(useConnectionOverride)
                             mqttSettings = mqttSettings.copy(port = mqttPortText.toIntOrNull() ?: 1883)
                             preferencesManager.setMqttSettings(mqttSettings)
                             (context.applicationContext as? LifeDashboardApplication)?.scheduleHealthSyncWork()
@@ -1134,6 +1161,7 @@ fun HealthConnectScreen(
                             initialEnabledDataTypes = enabledDataTypes
                             initialWebhookHeaders = webhookHeaders
                             initialWebhookSecret = webhookSecret
+                            initialConnectionOverride = useConnectionOverride
                             initialMqttSettings = mqttSettings
                             Toast.makeText(context, "Saved!", Toast.LENGTH_SHORT).show()
                         }

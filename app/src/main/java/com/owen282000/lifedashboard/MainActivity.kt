@@ -30,11 +30,13 @@ import kotlinx.coroutines.launch
 import com.owen282000.lifedashboard.screens.HealthConnectScreen
 import com.owen282000.lifedashboard.screens.LogsScreen
 import com.owen282000.lifedashboard.screens.ScreenTimeScreen
+import com.owen282000.lifedashboard.screens.ConnectionScreen
 import com.owen282000.lifedashboard.ui.theme.*
 
 enum class AppTab {
     HealthConnect,
     ScreenTime,
+    Connection,
     Logs
 }
 
@@ -93,6 +95,7 @@ class MainActivity : ComponentActivity() {
                             when (selectedTab) {
                                 AppTab.HealthConnect -> "Health Connect"
                                 AppTab.ScreenTime -> "Screen Time"
+                                AppTab.Connection -> "Connection"
                                 AppTab.Logs -> "Webhook Logs"
                             },
                             fontWeight = FontWeight.SemiBold
@@ -153,6 +156,17 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f)
                         )
 
+                        // Connection Tab
+                        NavBarItem(
+                            selected = selectedTab == AppTab.Connection,
+                            onClick = { selectedTab = AppTab.Connection },
+                            icon = if (selectedTab == AppTab.Connection)
+                                Icons.Filled.Link else Icons.Outlined.Link,
+                            label = "Connect",
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+
                         // Logs Tab
                         NavBarItem(
                             selected = selectedTab == AppTab.Logs,
@@ -188,6 +202,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                         AppTab.ScreenTime -> ScreenTimeScreen()
+                        AppTab.Connection -> ConnectionScreen()
                         AppTab.Logs -> LogsScreen()
                     }
                 }
@@ -236,4 +251,3 @@ private fun NavBarItem(
         }
     }
 }
-

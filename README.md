@@ -50,6 +50,10 @@ Also on iPhone? Check out [Life Dashboard Companion for iOS](https://github.com/
 - App names resolved from package names
 
 ### Webhook Configuration
+- **One-time enrollment** - Paste one server-generated string to configure Health and Screen Time
+  together without putting long-lived credentials in a URI ([protocol](docs/ENROLLMENT.md))
+- **Shared connection profile** - Use one default endpoint/auth configuration, with optional
+  per-category overrides for advanced deployments
 - **Multiple webhook URLs** - Send to multiple endpoints simultaneously
 - **Custom headers** - Add auth tokens, API keys, or any custom HTTP headers per category
 - **HMAC payload signing** - Optional `X-Signature` header so your server can verify the sender
